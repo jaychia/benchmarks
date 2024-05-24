@@ -11,3 +11,4 @@ protobuf==5.26.0
 # Other TPCH tests
 polars==0.20.26
 duckdb==0.10.1
+getdaft==0.2.24

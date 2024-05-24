@@ -200,6 +200,20 @@ def client(
 
 
 @pytest.fixture(scope="module")
+def daft_ray_address(local):
+    if local:
+        yield None
+    else:
+        ray = pytest.importorskip("ray")
+        daft = pytest.importorskip("daft")
+
+        # Start the Ray cluster and connect Daft
+        # TODO: Start a Ray cluster on EC2 and then connect to it + teardown after finished
+        ray.init()
+        yield "ray://localhost:10001"
+
+
+@pytest.fixture(scope="module")
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
 
