@@ -12,3 +12,4 @@ protobuf==5.26.0
 polars==0.20.26
 duckdb==0.10.1
 getdaft==0.2.24
+ray==2.20.0

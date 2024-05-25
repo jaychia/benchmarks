@@ -199,18 +199,44 @@ def client(
             yield client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def daft_ray_address(local):
     if local:
         yield None
     else:
+        import subprocess
+        import time
         ray = pytest.importorskip("ray")
-        daft = pytest.importorskip("daft")
+        ray_commands = pytest.importorskip("ray.autoscaler._private.commands")
 
-        # Start the Ray cluster and connect Daft
-        # TODO: Start a Ray cluster on EC2 and then connect to it + teardown after finished
-        ray.init()
-        yield "ray://localhost:10001"
+        # Start a Ray cluster
+        RAY_CLUSTER_EC2_CONFIG_FILE = "tests/assets/ray_cluster_ec2_config.yaml"
+        ray_commands.create_or_update_cluster(
+            config_file=RAY_CLUSTER_EC2_CONFIG_FILE,
+            override_min_workers=None,
+            override_max_workers=None,
+            yes=True,
+            override_cluster_name=None,
+            no_restart=False,
+            restart_only=False,
+        )
+
+        # Port-forward from the Ray cluster
+        ray_portforward_process = subprocess.Popen(
+            ["ray", "attach", RAY_CLUSTER_EC2_CONFIG_FILE, "-p", "10001", "-p", "8265"],
+            stdin=subprocess.DEVNULL,  # prevent Ray from hijacking our current stdin
+        )
+        time.sleep(5)
+
+        # Connect to the Ray cluster
+        LOCAL_RAY_PORTFORWARD = "ray://localhost:10001"
+        ray.init(address=LOCAL_RAY_PORTFORWARD)
+
+        yield LOCAL_RAY_PORTFORWARD
+
+        # Cleanup
+        ray_portforward_process.terminate()
+        ray_commands.teardown_cluster(RAY_CLUSTER_EC2_CONFIG_FILE, True, workers_only=False, override_cluster_name=None, keep_min_workers=None)
 
 
 @pytest.fixture(scope="module")

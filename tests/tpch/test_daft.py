@@ -25,7 +25,6 @@ def setup(local, daft_ray_address):
             ),
         )
 
-    # Connect to a Ray cluster if provided
     if daft_ray_address is not None:
         daft.context.set_runner_ray(address=daft_ray_address)
 
